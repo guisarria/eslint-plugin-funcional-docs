@@ -1,5 +1,5 @@
 {
-  "name": "functional-eslint-doc",
+  "name": "eslint-plugin-functional-docs",
   "version": "0.1.0",
   "private": true,
   "scripts": {
