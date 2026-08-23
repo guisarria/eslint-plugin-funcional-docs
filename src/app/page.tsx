@@ -45,8 +45,16 @@ const rules: Rule[] = [
     lite: true,
     strict: true,
     typeAware: true,
-    bad: `const add = (a: number, b: number) => a + b;`,
-    good: `const add = (a: number) => (b: number) => a + b;`,
+    bad: `/* eslint functional/functional-parameters: "error" */
+
+function add() {
+  return arguments.reduce((sum, number) => sum + number, 0);
+}`,
+    good: `/* eslint functional/functional-parameters: "error" */
+
+function add(numbers) {
+  return numbers.reduce((sum, number) => sum + number, 0);
+}`,
   },
   {
     name: "immutable-data",
@@ -56,10 +64,23 @@ const rules: Rule[] = [
     lite: true,
     strict: true,
     typeAware: true,
-    bad: `const user = { name: "Ada" };
-user.name = "Grace";`,
-    good: `const user = { name: "Ada" };
-const nextUser = { ...user, name: "Grace" };`,
+    bad: `/* eslint functional/immutable-data: "error" */
+
+const obj = { foo: 1 };
+
+obj.foo += 2; // <- Modifying an existing object/array is not allowed.
+obj.bar = 1; // <- Modifying an existing object/array is not allowed.
+delete obj.foo; // <- Modifying an existing object/array is not allowed.
+Object.assign(obj, { bar: 2 }); // <- Modifying properties of existing object not allowed.`,
+    good: `/* eslint functional/immutable-data: "error" */
+
+const obj = { foo: 1 };
+const arr = [0, 1, 2];
+
+const x = {
+  ...obj,
+  bar: [...arr, 3, 4],
+};`,
   },
   {
     name: "no-class-inheritance",
@@ -68,10 +89,48 @@ const nextUser = { ...user, name: "Grace" };`,
     recommended: true,
     lite: true,
     strict: true,
-    bad: `class Admin extends User {
-  role = "admin";
-}`,
-    good: `type Admin = User & { role: "admin" };`,
+    bad: `/* eslint functional/no-class-inheritance: "error" */
+
+abstract class Animal {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+}
+
+class Dog extends Animal {
+  constructor(name, age) {
+    super(name, age);
+  }
+
+  get ageInDogYears() {
+    return 7 * this.age;
+  }
+}
+
+const dogA = new Dog("Jasper", 2);
+
+console.log(\`\${dogA.name} is \${dogA.ageInDogYears} in dog years.\`);`,
+    good: `/* eslint functional/no-class-inheritance: "error" */
+
+class Animal {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
+  }
+}
+
+class Dog {
+  constructor(name, age) {
+    this.animal = new Animal(name, age);
+  }
+
+  get ageInDogYears() {
+    return 7 * this.animal.age;
+  }
+}
+
+console.log(\`\${dogA.name} is \${getAgeInDogYears(dogA.age)} in dog years.\`);`,
   },
   {
     name: "no-classes",
@@ -79,12 +138,34 @@ const nextUser = { ...user, name: "Grace" };`,
     description: "Disallow classes.",
     recommended: true,
     strict: true,
-    bad: `class Counter {
-  increment(value: number) {
-    return value + 1;
+    bad: `/* eslint functional/no-classes: "error" */
+
+class Dog {
+  constructor(name, age) {
+    this.name = name;
+    this.age = age;
   }
-}`,
-    good: `const increment = (value: number) => value + 1;`,
+
+  get ageInDogYears() {
+    return 7 * this.age;
+  }
+}
+
+const dogA = new Dog("Jasper", 2);
+
+console.log(\`\${dogA.name} is \${dogA.ageInDogYears} in dog years.\`);`,
+    good: `/* eslint functional/no-classes: "error" */
+
+function getAgeInDogYears(age) {
+  return 7 * age;
+}
+
+const dogA = {
+  name: "Jasper",
+  age: 2,
+};
+
+console.log(\`\${dogA.name} is \${getAgeInDogYears(dogA.age)} in dog years.\`);`,
   },
   {
     name: "no-conditional-statements",
@@ -93,12 +174,17 @@ const nextUser = { ...user, name: "Grace" };`,
     recommended: true,
     strict: true,
     typeAware: true,
-    bad: `if (ok) {
-  return "ready";
-}
+    bad: `/* eslint functional/no-conditional-statements: "error" */
 
-return "waiting";`,
-    good: `return ok ? "ready" : "waiting";`,
+let x;
+if (i === 1) {
+  x = 2;
+} else {
+  x = 3;
+}`,
+    good: `/* eslint functional/no-conditional-statements: "error" */
+
+const x = i === 1 ? 2 : 3;`,
   },
   {
     name: "no-expression-statements",
@@ -107,9 +193,12 @@ return "waiting";`,
     recommended: true,
     strict: true,
     typeAware: true,
-    bad: `console.log("saved");
-trackEvent("save");`,
-    good: `const message = ["saved", trackEvent("save")].join(" ");`,
+    bad: `/* eslint functional/no-expression-statements: "error" */
+
+console.log("Hello world!");`,
+    good: `/* eslint functional/no-expression-statements: "error" */
+
+const baz = foo(bar);`,
   },
   {
     name: "no-let",
@@ -118,12 +207,12 @@ trackEvent("save");`,
     recommended: true,
     lite: true,
     strict: true,
-    bad: `let total = 0;
-total += amount;`,
-    good: `const total = amounts.reduce(
-  (sum, amount) => sum + amount,
-  0,
-);`,
+    bad: `/* eslint functional/no-let: "error" */
+
+let x = 5;`,
+    good: `/* eslint functional/no-let: "error" */
+
+const x = 5;`,
   },
   {
     name: "no-loop-statements",
@@ -132,12 +221,17 @@ total += amount;`,
     recommended: true,
     lite: true,
     strict: true,
-    bad: `const ids: string[] = [];
+    bad: `/* eslint functional/no-loop-statements: "error" */
 
-for (const item of items) {
-  ids.push(item.id);
+const numbers = [1, 2, 3];
+const double = [];
+for (let i = 0; i < numbers.length; i++) {
+  double[i] = numbers[i] * 2;
 }`,
-    good: `const ids = items.map((item) => item.id);`,
+    good: `/* eslint functional/no-loop-statements: "error" */
+
+const numbers = [1, 2, 3];
+const double = numbers.map((n) => n * 2);`,
   },
   {
     name: "no-mixed-types",
@@ -147,24 +241,41 @@ for (const item of items) {
     lite: true,
     strict: true,
     typeAware: true,
-    bad: `type Mixed = {
-  id: string;
-  (): void;
+    bad: `/* eslint functional/no-mixed-types: "error" */
+
+type Foo = {
+  prop1: string;
+  prop2: () => string;
 };`,
-    good: `type Model = {
-  id: string;
-  label: string;
+    good: `/* eslint functional/no-mixed-types: "error" */
+
+type Foo = {
+  prop1: string;
+  prop2: number;
 };`,
   },
   {
     name: "no-promise-reject",
     category: "No Exceptions",
     description: "Disallow rejecting promises.",
-    bad: `return Promise.reject(new Error("failed"));`,
-    good: `return Promise.resolve({
-  ok: false as const,
-  error: "failed",
-});`,
+    bad: `/* eslint functional/no-promise-reject: "error" */
+
+async function divide(x, y) {
+  const [xv, yv] = await Promise.all([x, y]);
+
+  return yv === 0
+    ? Promise.reject(new Error("Cannot divide by zero."))
+    : xv / yv;
+}`,
+    good: `/* eslint functional/no-promise-reject: "error" */
+
+async function divide(x, y) {
+  const [xv, yv] = await Promise.all([x, y]);
+
+  return yv === 0
+    ? { error: new Error("Cannot divide by zero.") }
+    : { value: xv / yv };
+}`,
   },
   {
     name: "no-return-void",
@@ -174,24 +285,24 @@ for (const item of items) {
     lite: true,
     strict: true,
     typeAware: true,
-    bad: `const log = (value: string): void => {
-  console.log(value);
-};`,
-    good: `const format = (value: string): string =>
-  value.trim();`,
+    bad: `/* eslint functional/no-return-void: "error" */
+
+function updateText(): void {}`,
+    good: `/* eslint functional/no-return-void: "error" */
+
+function updateText(value: string): string {}`,
   },
   {
     name: "no-this-expressions",
     category: "No Other Paradigms",
     description: "Disallow this access.",
     strict: true,
-    bad: `class Cart {
-  total() {
-    return this.items.length;
-  }
-}`,
-    good: `const total = (items: readonly Item[]) =>
-  items.length;`,
+    bad: `/* eslint functional/no-this-expressions: "error" */
+
+const foo = this.value + 17;`,
+    good: `/* eslint functional/no-this-expressions: "error" */
+
+const foo = object.value + 17;`,
   },
   {
     name: "no-throw-statements",
@@ -201,14 +312,13 @@ for (const item of items) {
     lite: true,
     strict: true,
     typeAware: true,
-    bad: `if (!token) {
-  throw new Error("missing token");
-}`,
-    good: `if (!token) {
-  return {
-    ok: false as const,
-    error: "missing token",
-  };
+    bad: `/* eslint functional/no-throw-statements: "error" */
+
+throw new Error("Something went wrong.");`,
+    good: `/* eslint functional/no-throw-statements: "error" */
+
+function divide(x, y) {
+  return y === 0 ? new Error("Cannot divide by zero.") : x / y;
 }`,
   },
   {
@@ -216,14 +326,19 @@ for (const item of items) {
     category: "No Exceptions",
     description: "Disallow try/catch statements.",
     strict: true,
-    bad: `try {
-  await save();
+    bad: `/* eslint functional/no-try-statements: "error" */
+
+try {
+  doSomethingThatMightGoWrong(); // <-- Might throw an exception.
 } catch (error) {
-  report(error);
+  // Handle error.
 }`,
-    good: `const result = await save()
-  .then(ok)
-  .catch(toFailure);`,
+    good: `/* eslint functional/no-try-statements: "error" */
+
+doSomethingThatMightGoWrong() // <-- Returns a Promise
+  .catch((error) => {
+    // Handle error.
+  });`,
   },
   {
     name: "prefer-immutable-types",
@@ -235,28 +350,121 @@ for (const item of items) {
     typeAware: true,
     fixable: true,
     suggestion: true,
-    bad: `const sum = (values: number[]) =>
-  values.reduce(
-    (total, value) => total + value,
-    0,
-  );`,
-    good: `const sum = (values: readonly number[]) =>
-  values.reduce(
-    (total, value) => total + value,
-    0,
-  );`,
+    bad: `/* eslint functional/prefer-immutable-types: "error" */
+
+function array1(arg: string[]) {} // array is not readonly
+function array2(arg: ReadonlyArray<string[]>) {} // array element is not readonly
+function array3(arg: [string, number]) {} // tuple is not readonly
+function array4(arg: readonly [string[], number]) {} // tuple element is not readonly
+// the above examples work the same if you use ReadonlyArray<T> instead
+function object1(arg: { prop: string }) {} // property is not readonly
+function object2(arg: { readonly prop: string; prop2: string }) {} // not all properties are readonly
+function object3(arg: { readonly prop: { prop2: string } }) {} // nested property is not readonly
+// the above examples work the same if you use Readonly<T> instead
+
+interface CustomArrayType extends ReadonlyArray<string> {
+  prop: string; // note: this property is mutable
+}
+function custom1(arg: CustomArrayType) {}
+
+interface CustomFunction {
+  (): void;
+  prop: string; // note: this property is mutable
+}
+function custom2(arg: CustomFunction) {}
+
+function union(arg: string[] | ReadonlyArray<number[]>) {} // not all types are readonly
+
+// rule also checks function types
+interface Foo1 {
+  (arg: string[]): void;
+}
+interface Foo2 {
+  new (arg: string[]): void;
+}
+const x = { foo(arg: string[]): void {} };
+function foo(arg: string[]);
+type Foo3 = (arg: string[]) => void;
+interface Foo4 {
+  foo(arg: string[]): void;
+}`,
+    good: `/* eslint functional/prefer-immutable-types: "error" */
+
+function array1(arg: ReadonlyArray<string>) {}
+function array2(arg: ReadonlyArray<ReadonlyArray<string>>) {}
+function array3(arg: readonly [string, number]) {}
+function array4(arg: readonly [ReadonlyArray<string>, number]) {}
+// the above examples work the same if you use ReadonlyArray<T> instead
+
+function object1(arg: { readonly prop: string }) {}
+function object2(arg: { readonly prop: string; readonly prop2: string }) {}
+function object3(arg: { readonly prop: { readonly prop2: string } }) {}
+// the above examples work the same if you use Readonly<T> instead
+
+interface CustomArrayType extends ReadonlyArray<string> {
+  readonly prop: string;
+}
+function custom1(arg: Readonly<CustomArrayType>) {}
+// interfaces that extend the array types are not considered arrays, and thus must be made readonly.
+interface CustomFunction {
+  (): void;
+  readonly prop: string;
+}
+function custom2(arg: CustomFunction) {}
+
+function union(arg: ReadonlyArray<string> | ReadonlyArray<number[]>) {}
+
+function primitive1(arg: string) {}
+function primitive2(arg: number) {}
+function primitive3(arg: boolean) {}
+function primitive4(arg: unknown) {}
+function primitive5(arg: null) {}
+function primitive6(arg: undefined) {}
+function primitive7(arg: any) {}
+function primitive8(arg: never) {}
+function primitive9(arg: string | number | undefined) {}
+
+function fnSig(arg: () => void) {}
+
+enum Foo {
+  a,
+  b,
+}
+function enum1(arg: Foo) {}
+
+function symb1(arg: symbol) {}
+const customSymbol = Symbol("a");
+function symb2(arg: typeof customSymbol) {}
+
+// function types
+interface Foo1 {
+  (arg: ReadonlyArray<string>): void;
+}
+interface Foo2 {
+  new (arg: ReadonlyArray<string>): void;
+}
+const x = { foo(arg: ReadonlyArray<string>): void {} };
+function foo(arg: ReadonlyArray<string>);
+type Foo3 = (arg: ReadonlyArray<string>) => void;
+interface Foo4 {
+  foo(arg: ReadonlyArray<string>): void;
+}`,
   },
   {
     name: "prefer-property-signatures",
     category: "Stylistic",
     description: "Prefer property signatures over method signatures.",
     typeAware: true,
-    bad: `interface User {
-  getName(): string;
-}`,
-    good: `interface User {
-  getName: () => string;
-}`,
+    bad: `/* eslint functional/prefer-property-signatures: "error" */
+
+type Foo = {
+  bar(): string;
+};`,
+    good: `/* eslint functional/prefer-property-signatures: "error" */
+
+type Foo = {
+  bar: () => string;
+};`,
   },
   {
     name: "prefer-readonly-type",
@@ -265,8 +473,22 @@ for (const item of items) {
     typeAware: true,
     fixable: true,
     deprecated: true,
-    bad: `type Names = Array<string>;`,
-    good: `type Names = ReadonlyArray<string>;`,
+    bad: `/* eslint functional/prefer-readonly-type: "error" */
+
+interface Point {
+  x: number;
+  y: number;
+}
+const point: Point = { x: 23, y: 44 };
+point.x = 99; // This is perfectly valid.`,
+    good: `/* eslint functional/prefer-readonly-type: "error" */
+
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+const point: Point = { x: 23, y: 44 };
+point.x = 99; // <- No object mutation allowed.`,
   },
   {
     name: "prefer-tacit",
@@ -274,10 +496,20 @@ for (const item of items) {
     description: "Replaces x => f(x) with just f.",
     typeAware: true,
     suggestion: true,
-    bad: `const ids = items.map((item) =>
-  getId(item),
-);`,
-    good: `const ids = items.map(getId);`,
+    bad: `/* eslint functional/prefer-tacit: "error" */
+
+function f(x) {
+  return x + 1;
+}
+
+const foo = [1, 2, 3].map((x) => f(x));`,
+    good: `/* eslint functional/prefer-tacit: "error" */
+
+function f(x) {
+  return x + 1;
+}
+
+const foo = [1, 2, 3].map(f);`,
   },
   {
     name: "readonly-type",
@@ -285,13 +517,17 @@ for (const item of items) {
     description: "Require consistently using either readonly keywords or Readonly<T>.",
     typeAware: true,
     fixable: true,
-    bad: `type Point = {
-  readonly x: number;
-  readonly y: number;
+    bad: `/* eslint functional/readonly-type: ["error", "generic"] */
+
+type Foo = {
+  readonly bar: string;
+  readonly baz: number;
 };`,
-    good: `type Point = Readonly<{
-  x: number;
-  y: number;
+    good: `/* eslint functional/readonly-type: ["error", "generic"] */
+
+type Foo = Readonly<{
+  bar: string;
+  baz: number;
 }>;`,
   },
   {
@@ -304,12 +540,18 @@ for (const item of items) {
     typeAware: true,
     fixable: true,
     suggestion: true,
-    bad: `type User = {
-  name: string;
+    bad: `/* eslint functional/type-declaration-immutability: "error" */
+
+type ReadonlyElement = {
+  id: number;
+  data: string[];
 };`,
-    good: `type User = {
-  readonly name: string;
-};`,
+    good: `/* eslint functional/type-declaration-immutability: "error" */
+
+type ReadonlyElement = Readonly<{
+  id: number;
+  data: string[];
+}>;`,
   },
 ];
 
@@ -380,9 +622,309 @@ function normalizeCode(code: string): string {
   return code.replaceAll("\r\n", "\n").replaceAll("\r", "\n").replaceAll("\t", "  ").trim();
 }
 
+type SyntaxTokenKind =
+  | "plain"
+  | "comment"
+  | "string"
+  | "number"
+  | "keyword"
+  | "type"
+  | "function"
+  | "property"
+  | "operator"
+  | "punctuation"
+  | "constant";
+
+type SyntaxToken = {
+  kind: SyntaxTokenKind;
+  value: string;
+};
+
+const syntaxKeywords = new Set([
+  "abstract",
+  "as",
+  "async",
+  "await",
+  "break",
+  "case",
+  "catch",
+  "class",
+  "const",
+  "continue",
+  "declare",
+  "default",
+  "delete",
+  "do",
+  "else",
+  "enum",
+  "export",
+  "extends",
+  "finally",
+  "for",
+  "from",
+  "function",
+  "get",
+  "if",
+  "implements",
+  "import",
+  "in",
+  "infer",
+  "instanceof",
+  "interface",
+  "keyof",
+  "let",
+  "namespace",
+  "new",
+  "of",
+  "private",
+  "protected",
+  "public",
+  "readonly",
+  "return",
+  "set",
+  "static",
+  "satisfies",
+  "switch",
+  "throw",
+  "try",
+  "type",
+  "typeof",
+  "var",
+  "while",
+  "with",
+  "yield",
+]);
+
+const syntaxTypes = new Set([
+  "any",
+  "bigint",
+  "boolean",
+  "never",
+  "number",
+  "object",
+  "string",
+  "symbol",
+  "undefined",
+  "unknown",
+  "void",
+]);
+
+const syntaxConstants = new Set(["false", "null", "super", "this", "true"]);
+
+const syntaxOperators = [
+  "===",
+  "!==",
+  ">>>",
+  "**=",
+  "&&=",
+  "||=",
+  "??=",
+  "=>",
+  "==",
+  "!=",
+  "<=",
+  ">=",
+  "&&",
+  "||",
+  "??",
+  "?.",
+  "++",
+  "--",
+  "+=",
+  "-=",
+  "*=",
+  "/=",
+  "%=",
+  "**",
+  "<<",
+  ">>",
+  "+",
+  "-",
+  "*",
+  "/",
+  "%",
+  "=",
+  "<",
+  ">",
+  "!",
+  "?",
+  "&",
+  "|",
+  "^",
+  "~",
+];
+
+function appendSyntaxToken(tokens: SyntaxToken[], kind: SyntaxTokenKind, value: string) {
+  const previous = tokens.at(-1);
+
+  if (previous?.kind === kind) {
+    previous.value += value;
+    return;
+  }
+
+  tokens.push({ kind, value });
+}
+
+function previousNonWhitespaceCharacter(code: string, index: number): string {
+  for (let cursor = index - 1; cursor >= 0; cursor -= 1) {
+    if (!/\s/.test(code[cursor])) {
+      return code[cursor];
+    }
+  }
+
+  return "";
+}
+
+function nextNonWhitespaceCharacter(code: string, index: number): string {
+  for (let cursor = index; cursor < code.length; cursor += 1) {
+    if (!/\s/.test(code[cursor])) {
+      return code[cursor];
+    }
+  }
+
+  return "";
+}
+
+function classifyIdentifier(code: string, identifier: string, start: number, end: number) {
+  if (syntaxKeywords.has(identifier)) {
+    return "keyword" satisfies SyntaxTokenKind;
+  }
+
+  if (syntaxTypes.has(identifier)) {
+    return "type" satisfies SyntaxTokenKind;
+  }
+
+  if (syntaxConstants.has(identifier)) {
+    return "constant" satisfies SyntaxTokenKind;
+  }
+
+  const previousCharacter = previousNonWhitespaceCharacter(code, start);
+  const nextCharacter = nextNonWhitespaceCharacter(code, end);
+
+  if (nextCharacter === "(") {
+    return "function" satisfies SyntaxTokenKind;
+  }
+
+  if (previousCharacter === ".") {
+    return "property" satisfies SyntaxTokenKind;
+  }
+
+  if (/^[A-Z]/.test(identifier)) {
+    return "type" satisfies SyntaxTokenKind;
+  }
+
+  return "plain" satisfies SyntaxTokenKind;
+}
+
+function tokenizeCode(code: string): SyntaxToken[] {
+  const tokens: SyntaxToken[] = [];
+  let index = 0;
+
+  while (index < code.length) {
+    const character = code[index];
+    const nextCharacter = code[index + 1];
+
+    if (/\s/.test(character)) {
+      let end = index + 1;
+
+      while (end < code.length && /\s/.test(code[end])) {
+        end += 1;
+      }
+
+      appendSyntaxToken(tokens, "plain", code.slice(index, end));
+      index = end;
+      continue;
+    }
+
+    if (character === "/" && nextCharacter === "/") {
+      const end = code.indexOf("\n", index);
+      const commentEnd = end === -1 ? code.length : end;
+
+      appendSyntaxToken(tokens, "comment", code.slice(index, commentEnd));
+      index = commentEnd;
+      continue;
+    }
+
+    if (character === "/" && nextCharacter === "*") {
+      const end = code.indexOf("*/", index + 2);
+      const commentEnd = end === -1 ? code.length : end + 2;
+
+      appendSyntaxToken(tokens, "comment", code.slice(index, commentEnd));
+      index = commentEnd;
+      continue;
+    }
+
+    if (character === '"' || character === "'" || character === "`") {
+      const quote = character;
+      let end = index + 1;
+
+      while (end < code.length) {
+        if (code[end] === "\\") {
+          end += 2;
+          continue;
+        }
+
+        if (code[end] === quote) {
+          end += 1;
+          break;
+        }
+
+        end += 1;
+      }
+
+      appendSyntaxToken(tokens, "string", code.slice(index, end));
+      index = end;
+      continue;
+    }
+
+    if (/\d/.test(character) || (character === "." && /\d/.test(nextCharacter))) {
+      const number = code
+        .slice(index)
+        .match(
+          /^(?:0[xX][\dA-Fa-f_]+|0[bB][01_]+|0[oO][0-7_]+|(?:\d[\d_]*(?:\.[\d_]*)?|\.\d[\d_]*)(?:[eE][+-]?\d[\d_]*)?n?)/,
+        )?.[0];
+
+      if (number) {
+        appendSyntaxToken(tokens, "number", number);
+        index += number.length;
+        continue;
+      }
+    }
+
+    if (/[A-Za-z_$]/.test(character)) {
+      const identifier = code.slice(index).match(/^[A-Za-z_$][\w$]*/)?.[0] ?? character;
+      const end = index + identifier.length;
+
+      appendSyntaxToken(tokens, classifyIdentifier(code, identifier, index, end), identifier);
+      index = end;
+      continue;
+    }
+
+    const operator = syntaxOperators.find((candidate) => code.startsWith(candidate, index));
+
+    if (operator) {
+      appendSyntaxToken(tokens, "operator", operator);
+      index += operator.length;
+      continue;
+    }
+
+    if ("{}[]();,:.".includes(character)) {
+      appendSyntaxToken(tokens, "punctuation", character);
+      index += 1;
+      continue;
+    }
+
+    appendSyntaxToken(tokens, "plain", character);
+    index += 1;
+  }
+
+  return tokens;
+}
+
 function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
   const normalizedCode = normalizeCode(code);
+  const highlightedCode = useMemo(() => tokenizeCode(normalizedCode), [normalizedCode]);
 
   const copy = async () => {
     try {
@@ -408,7 +950,13 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
       </div>
 
       <pre>
-        <code>{normalizedCode}</code>
+        <code className="syntax-highlight">
+          {highlightedCode.map((token, index) => (
+            <span key={`${token.kind}-${index}`} className={`syntax-${token.kind}`}>
+              {token.value}
+            </span>
+          ))}
+        </code>
       </pre>
     </div>
   );

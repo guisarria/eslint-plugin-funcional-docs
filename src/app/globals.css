@@ -784,6 +784,48 @@ h2 {
   white-space: pre;
 }
 
+.syntax-highlight {
+  color: #bab9af;
+}
+
+.syntax-comment {
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.syntax-string {
+  color: var(--green);
+}
+
+.syntax-number,
+.syntax-constant {
+  color: var(--orange);
+}
+
+.syntax-keyword {
+  color: var(--purple);
+}
+
+.syntax-type {
+  color: var(--yellow);
+}
+
+.syntax-function {
+  color: var(--blue);
+}
+
+.syntax-property {
+  color: var(--cyan);
+}
+
+.syntax-operator {
+  color: var(--red);
+}
+
+.syntax-punctuation {
+  color: var(--ink-dim);
+}
+
 .callout {
   display: flex;
   gap: 12px;
